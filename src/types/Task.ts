@@ -14,5 +14,8 @@ export interface Task {
 export type Priority = "high" | "medium" | "low";
 
 export type TaskFormData = {
-    // Add form data interface here
+    title: string;
+    description?: string;
+    priority: "high" | "medium" | "low";
+    dueDate?: string;
 };

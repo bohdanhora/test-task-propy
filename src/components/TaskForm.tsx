@@ -12,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task } from "@/types/Task";
 
 const formSchema = z.object({
-    title: z.string().min(1, { message: "Title is required" }),
-    description: z.string().optional(),
+    title: z
+        .string()
+        .min(1, { message: "Title is required" })
+        .max(100, { message: "Title cannot exceed 100 characters" }),
+    description: z.string().max(500, { message: "Description cannot exceed 500 characters" }).optional(),
     priority: z.enum(["high", "medium", "low"], {
         required_error: "Select a priority",
     }),
@@ -28,7 +31,7 @@ interface TaskFormProps {
     onCancel?: () => void;
 }
 
-export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) => {
+export const TaskForm = ({ initialValues, onSubmit, onCancel }: TaskFormProps) => {
     const form = useForm<TaskFormValues>({
         resolver: zodResolver(formSchema),
         mode: "onChange",
@@ -55,7 +58,7 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
         onSubmit?.({
             ...values,
             id: initialValues?.id,
-            dueDate: values.dueDate ? new Date(values.dueDate).toDateString() : "",
+            dueDate: values.dueDate,
         });
 
         form.reset();
@@ -63,16 +66,26 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <form
+                onSubmit={form.handleSubmit(handleSubmit)}
+                className="space-y-4"
+                aria-label={initialValues ? "Update task form" : "Add new task form"}
+            >
                 {/* Title */}
                 <FormField
                     control={form.control}
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Title</FormLabel>
+                            <FormLabel htmlFor="task-title">Title</FormLabel>
                             <FormControl>
-                                <Input placeholder="Task title..." {...field} />
+                                <Input
+                                    id="task-title"
+                                    placeholder="Task title..."
+                                    aria-required="true"
+                                    aria-label="Task title"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -85,9 +98,14 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
                     name="description"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Description</FormLabel>
+                            <FormLabel htmlFor="task-desc">Description</FormLabel>
                             <FormControl>
-                                <Textarea placeholder="Task description..." {...field} />
+                                <Textarea
+                                    id="task-desc"
+                                    placeholder="Task description..."
+                                    aria-label="Task description"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -100,10 +118,14 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
                     name="priority"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Priority</FormLabel>
+                            <FormLabel htmlFor="task-priority">Priority</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger
+                                        id="task-priority"
+                                        aria-required="true"
+                                        aria-label="Select task priority"
+                                    >
                                         <SelectValue placeholder="Select priority" />
                                     </SelectTrigger>
                                 </FormControl>
@@ -124,9 +146,15 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
                     name="dueDate"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Due Date</FormLabel>
+                            <FormLabel htmlFor="task-date">Due Date</FormLabel>
                             <FormControl>
-                                <Input type="date" {...field} />
+                                <Input
+                                    id="task-date"
+                                    type="date"
+                                    aria-required="true"
+                                    aria-label="Task due date"
+                                    {...field}
+                                />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -135,7 +163,11 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
 
                 {/* Buttons */}
                 <div className="flex gap-2">
-                    <Button type="submit" disabled={!form.formState.isValid}>
+                    <Button
+                        type="submit"
+                        disabled={!form.formState.isValid}
+                        aria-label={initialValues ? "Update task" : "Add task"}
+                    >
                         {initialValues ? "Update Task" : "Add Task"}
                     </Button>
                     <Button
@@ -145,6 +177,7 @@ export const TaskForm = ({ onSubmit, initialValues, onCancel }: TaskFormProps) =
                             form.reset();
                             onCancel?.();
                         }}
+                        aria-label="Cancel task form"
                     >
                         Cancel
                     </Button>
