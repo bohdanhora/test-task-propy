@@ -407,7 +407,7 @@ const Index = () => {
                                             value={filterPriority}
                                             onValueChange={(value) => setFilterPriority(value as any)}
                                         >
-                                            <SelectTrigger className="w-[150px]">
+                                            <SelectTrigger className="w-full md:w-[150px]">
                                                 <SelectValue placeholder="All Priorities" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -422,7 +422,7 @@ const Index = () => {
                                             value={filterCompleted}
                                             onValueChange={(value) => setFilterCompleted(value as any)}
                                         >
-                                            <SelectTrigger className="w-[150px]">
+                                            <SelectTrigger className="w-full md:w-[150px]">
                                                 <SelectValue placeholder="All Tasks" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -433,7 +433,7 @@ const Index = () => {
                                         </Select>
 
                                         <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
-                                            <SelectTrigger className="w-[150px]">
+                                            <SelectTrigger className="w-full md:w-[150px]">
                                                 <SelectValue placeholder="Sort By" />
                                             </SelectTrigger>
                                             <SelectContent>
