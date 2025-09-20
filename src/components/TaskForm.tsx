@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Task } from "@/types/Task";
+import { CustomDatePicker } from "./ui/date-picker";
 
 const formSchema = z.object({
     title: z
@@ -77,7 +78,10 @@ export const TaskForm = ({ initialValues, onSubmit, onCancel }: TaskFormProps) =
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel htmlFor="task-title">Title</FormLabel>
+                            <FormLabel htmlFor="task-title">
+                                Title
+                                <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <FormControl>
                                 <Input
                                     id="task-title"
@@ -118,7 +122,9 @@ export const TaskForm = ({ initialValues, onSubmit, onCancel }: TaskFormProps) =
                     name="priority"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel htmlFor="task-priority">Priority</FormLabel>
+                            <FormLabel htmlFor="task-priority">
+                                Priority <span className="text-red-500 ml-1">*</span>
+                            </FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger
@@ -144,21 +150,7 @@ export const TaskForm = ({ initialValues, onSubmit, onCancel }: TaskFormProps) =
                 <FormField
                     control={form.control}
                     name="dueDate"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel htmlFor="task-date">Due Date</FormLabel>
-                            <FormControl>
-                                <Input
-                                    id="task-date"
-                                    type="date"
-                                    aria-required="true"
-                                    aria-label="Task due date"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
+                    render={() => <CustomDatePicker name="dueDate" control={form.control} label="Due Date" required />}
                 />
 
                 {/* Buttons */}
