@@ -57,8 +57,12 @@ export const TaskCard = ({ task, editingTask, onDelete, onEdit, onToggle }: Task
             </div>
 
             {/* Right section: Actions & checkbox */}
-            <div className="flex flex-col sm:items-end gap-2 sm:gap-4">
-                <Checkbox checked={completed} onCheckedChange={onToggle} />
+            <div className="flex flex-col justify-between sm:items-end gap-2 sm:gap-4">
+                <Checkbox
+                    checked={completed}
+                    onCheckedChange={onToggle}
+                    className="absolute top-5 right-5 md:relative md:top-auto md:right-auto"
+                />
 
                 <div className="flex gap-2 mt-2 sm:mt-0">
                     <Button size="sm" variant="outline" onClick={onEdit} disabled={editingTask}>

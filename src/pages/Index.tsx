@@ -85,7 +85,11 @@ const Index = () => {
         if (task.id) {
             // Update existing task
             setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...formattedTask } : t)));
-            toast({ description: "Task updated!" });
+            toast({
+                title: "Task Updated",
+                description: `Task "${task.title}" was successfully updated.`,
+                variant: "default",
+            });
         } else {
             // Add new task
             const newTask: Task = {
@@ -95,7 +99,11 @@ const Index = () => {
                 completed: false,
             };
             setTasks((prev) => [...prev, newTask]);
-            toast({ description: "Task added!" });
+            toast({
+                title: "Task Added",
+                description: `Task "${task.title}" has been added to your list.`,
+                variant: "default",
+            });
         }
 
         onCancel();
@@ -103,18 +111,24 @@ const Index = () => {
 
     // Toggle Complete
     const toggleTask = (id: string) => {
+        const task = tasks.find((t) => t.id === id);
+        setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
         toast({
-            description: "Task completed status changed.",
+            title: "Task Status Changed",
+            description: `Task "${task?.title}" marked as ${task?.completed ? "incomplete" : "completed"}.`,
+            variant: "default",
         });
-        setTasks((prev) => prev.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)));
     };
 
     // Delete Task
     const deleteTask = (id: string) => {
+        const task = tasks.find((t) => t.id === id);
+        setTasks((prev) => prev.filter((t) => t.id !== id));
         toast({
-            description: "Task deleted",
+            title: "Task Deleted",
+            description: `Task "${task?.title}" has been removed.`,
+            variant: "destructive",
         });
-        setTasks((prev) => prev.filter((task) => task.id !== id));
     };
 
     const renderTasks = (task: Task) => (
