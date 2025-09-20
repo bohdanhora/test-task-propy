@@ -1,27 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, CheckCircle2, Plus, FileText, AlertTriangle } from "lucide-react";
 import { useTimer } from "@/hooks/useTimer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Task } from "@/types/Task";
+import { Task, TaskFormData } from "@/types/Task";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// TODO: Define proper TypeScript interfaces for Task
-
-type TaskFormValues = {
-    title: string;
-    description?: string;
-    priority: "high" | "medium" | "low";
-    dueDate?: string;
-};
-
 const Index = () => {
-    // TODO: Implement state management for tasks
     const [tasks, setTasks] = useState<Task[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [testStarted, setTestStarted] = useState(false);
@@ -30,10 +21,19 @@ const Index = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterPriority, setFilterPriority] = useState<"all" | "high" | "medium" | "low">("all");
     const [filterCompleted, setFilterCompleted] = useState<"all" | "completed" | "pending">("all");
+    const [sortBy, setSortBy] = useState<"none" | "priority" | "dueDate">("none");
+
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const { toast } = useToast();
 
     const { timeRemaining, isTimeUp, formatTime, startTimer, resetTimer } = useTimer(3600); // 60 minutes
+
+    const priorityOrder: Record<string, number> = {
+        high: 1,
+        medium: 2,
+        low: 3,
+    };
 
     const handleStartTest = () => {
         setTestStarted(true);
@@ -58,8 +58,25 @@ const Index = () => {
         return matchesSearch && matchesPriority && matchesCompleted;
     });
 
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+        if (sortBy === "priority") {
+            return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        if (sortBy === "dueDate") {
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
+        return 0;
+    });
+
+    const onCancel = () => {
+        setEditingTask(null);
+        setShowForm(false);
+    };
+
     // Add Task
-    const handleSubmitTask = (task: TaskFormValues & { id?: string }) => {
+    const handleSubmitTask = (task: TaskFormData & { id?: string }) => {
         const formattedTask = {
             ...task,
             dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
@@ -81,14 +98,7 @@ const Index = () => {
             toast({ description: "Task added!" });
         }
 
-        // Close form
-        setEditingTask(null);
-        setShowForm(false);
-    };
-
-    const onCancel = () => {
-        setEditingTask(null);
-        setShowForm(false);
+        onCancel();
     };
 
     // Toggle Complete
@@ -111,20 +121,20 @@ const Index = () => {
         <TaskCard
             key={task.id}
             task={task}
+            editingTask={Boolean(editingTask)}
             onDelete={() => deleteTask(task.id)}
             onEdit={() => {
                 setEditingTask(task);
                 setShowForm(true);
             }}
             onToggle={() => toggleTask(task.id)}
-            editingTask={Boolean(editingTask)}
         />
     );
 
     useEffect(() => {
         const stored = localStorage.getItem("tasks");
         if (stored) {
-            const parsed: Task[] = JSON.parse(stored).map((t: any) => ({
+            const parsed: Task[] = JSON.parse(stored).map((t: Task) => ({
                 ...t,
                 createdAt: new Date(t.createdAt),
                 dueDate: t.dueDate ? new Date(t.dueDate) : undefined,
@@ -137,6 +147,48 @@ const Index = () => {
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
+
+    // Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ctrl + O = add task
+            if (e.ctrlKey && e.key.toLowerCase() === "o") {
+                e.preventDefault();
+                setShowForm(true);
+                setEditingTask(null);
+            }
+
+            // Ctrl + R = reset test
+            if (e.ctrlKey && e.key.toLowerCase() === "r") {
+                e.preventDefault();
+                handleResetTest();
+            }
+
+            // Escape = cancel form
+            if (e.key === "Escape" && showForm) {
+                e.preventDefault();
+                onCancel();
+            }
+
+            // Ctrl + S = save task (if form is open)
+            if (e.ctrlKey && e.key.toLowerCase() === "s" && showForm) {
+                e.preventDefault();
+                const form = document.querySelector("form");
+                if (form) {
+                    form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+                }
+            }
+
+            // Ctrl + F = focus search input
+            if (e.ctrlKey && e.key.toLowerCase() === "f") {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [showForm, handleResetTest]);
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -309,25 +361,41 @@ const Index = () => {
                                     </div>
 
                                     {/* TODO: Add TaskForm component here when showForm is true */}
-                                    {showForm && (
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle>Add New Task</CardTitle>
-                                                <CardDescription>Create a new task to manage your work</CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <TaskForm
-                                                    onSubmit={handleSubmitTask}
-                                                    initialValues={editingTask || undefined}
-                                                    onCancel={onCancel}
-                                                />
-                                            </CardContent>
-                                        </Card>
-                                    )}
+                                    <AnimatePresence>
+                                        {showForm && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                exit={{ opacity: 0, height: 0 }}
+                                                transition={{ duration: 0.3 }}
+                                            >
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle>
+                                                            {editingTask ? "Edit Task" : "Add New Task"}
+                                                        </CardTitle>
+                                                        <CardDescription>
+                                                            {editingTask
+                                                                ? "Update your task details"
+                                                                : "Create a new task to manage your work"}
+                                                        </CardDescription>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <TaskForm
+                                                            onSubmit={handleSubmitTask}
+                                                            initialValues={editingTask || null}
+                                                            onCancel={onCancel}
+                                                        />
+                                                    </CardContent>
+                                                </Card>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
 
                                     {/* Filters */}
                                     <div className="flex flex-col md:flex-row gap-4 mb-4 items-center justify-between">
                                         <Input
+                                            ref={searchInputRef}
                                             type="text"
                                             placeholder="Search tasks..."
                                             value={searchQuery}
@@ -363,6 +431,17 @@ const Index = () => {
                                                 <SelectItem value="pending">Pending</SelectItem>
                                             </SelectContent>
                                         </Select>
+
+                                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                                            <SelectTrigger className="w-[150px]">
+                                                <SelectValue placeholder="Sort By" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No Sorting</SelectItem>
+                                                <SelectItem value="priority">Priority</SelectItem>
+                                                <SelectItem value="dueDate">Due Date</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
 
                                     {/* Task List */}
@@ -389,7 +468,21 @@ const Index = () => {
                                                 </CardContent>
                                             </Card>
                                         ) : (
-                                            <div className="grid gap-4">{filteredTasks.map(renderTasks)}</div>
+                                            <div className="grid gap-4">
+                                                <AnimatePresence>
+                                                    {sortedTasks.map((task) => (
+                                                        <motion.div
+                                                            key={task.id}
+                                                            initial={{ opacity: 0, y: 20 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -20 }}
+                                                            transition={{ duration: 0.25 }}
+                                                        >
+                                                            {renderTasks(task)}
+                                                        </motion.div>
+                                                    ))}
+                                                </AnimatePresence>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
