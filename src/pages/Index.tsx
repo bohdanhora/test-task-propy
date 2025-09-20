@@ -8,6 +8,8 @@ import { Task } from "@/types/Task";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // TODO: Define proper TypeScript interfaces for Task
 
@@ -25,6 +27,10 @@ const Index = () => {
     const [testStarted, setTestStarted] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterPriority, setFilterPriority] = useState<"all" | "high" | "medium" | "low">("all");
+    const [filterCompleted, setFilterCompleted] = useState<"all" | "completed" | "pending">("all");
+
     const { toast } = useToast();
 
     const { timeRemaining, isTimeUp, formatTime, startTimer, resetTimer } = useTimer(3600); // 60 minutes
@@ -40,6 +46,17 @@ const Index = () => {
         setTasks([]);
         setShowForm(false);
     };
+
+    const filteredTasks = tasks.filter((task) => {
+        const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
+        const matchesCompleted =
+            filterCompleted === "all" ||
+            (filterCompleted === "completed" && task.completed) ||
+            (filterCompleted === "pending" && !task.completed);
+
+        return matchesSearch && matchesPriority && matchesCompleted;
+    });
 
     // Add Task
     const handleSubmitTask = (task: TaskFormValues & { id?: string }) => {
@@ -308,7 +325,47 @@ const Index = () => {
                                         </Card>
                                     )}
 
-                                    {/* Task List Area */}
+                                    {/* Filters */}
+                                    <div className="flex flex-col md:flex-row gap-4 mb-4 items-center justify-between">
+                                        <Input
+                                            type="text"
+                                            placeholder="Search tasks..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="flex-1"
+                                        />
+
+                                        <Select
+                                            value={filterPriority}
+                                            onValueChange={(value) => setFilterPriority(value as any)}
+                                        >
+                                            <SelectTrigger className="w-[150px]">
+                                                <SelectValue placeholder="All Priorities" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Priorities</SelectItem>
+                                                <SelectItem value="high">High</SelectItem>
+                                                <SelectItem value="medium">Medium</SelectItem>
+                                                <SelectItem value="low">Low</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        <Select
+                                            value={filterCompleted}
+                                            onValueChange={(value) => setFilterCompleted(value as any)}
+                                        >
+                                            <SelectTrigger className="w-[150px]">
+                                                <SelectValue placeholder="All Tasks" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="all">All Tasks</SelectItem>
+                                                <SelectItem value="completed">Completed</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Task List */}
                                     <div className="space-y-4">
                                         {tasks.length === 0 ? (
                                             <Card className="border-dashed">
@@ -321,8 +378,18 @@ const Index = () => {
                                                     </p>
                                                 </CardContent>
                                             </Card>
+                                        ) : filteredTasks.length === 0 ? (
+                                            <Card className="border-dashed">
+                                                <CardContent className="flex flex-col items-center justify-center py-12">
+                                                    <CheckCircle2 className="w-12 h-12 text-muted-foreground mb-4" />
+                                                    <h3 className="text-lg font-medium mb-2">No tasks found</h3>
+                                                    <p className="text-muted-foreground text-center max-w-sm">
+                                                        Adjust your search or filters to see tasks.
+                                                    </p>
+                                                </CardContent>
+                                            </Card>
                                         ) : (
-                                            <div className="grid gap-4">{tasks.map(renderTasks)}</div>
+                                            <div className="grid gap-4">{filteredTasks.map(renderTasks)}</div>
                                         )}
                                     </div>
                                 </div>
